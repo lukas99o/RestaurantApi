@@ -22,16 +22,27 @@ public class BookingServiceTests
     [Fact]
     public async Task AddBookingAsync_MapsDto_AndCallsRepo()
     {
+        var time = DateTime.UtcNow.AddDays(1);
+        var timeEnd = time.AddHours(1);
+
         var dto = new BookingCreateDTO
         {
             TableID = 3,
-            AmountOfPeople = 2,
-            Time = new DateTime(2030, 1, 1, 12, 0, 0, DateTimeKind.Utc),
-            TimeEnd = new DateTime(2030, 1, 1, 13, 0, 0, DateTimeKind.Utc),
+            Time = time,
+            TimeEnd = timeEnd,
             Name = "N",
             Email = "e",
-            PhoneNumber = "p"
+            Phone = "p"
         };
+
+        _tableRepoMock.Setup(r => r.GetTableByIDAsync(dto.TableID)).ReturnsAsync(new Table
+        {
+            TableID = dto.TableID,
+            TableSeats = 4,
+            IsAvailable = true
+        });
+
+        _bookingRepoMock.Setup(r => r.GetAllBookingsAsync()).ReturnsAsync(new List<Booking>());
 
         _bookingRepoMock.Setup(r => r.AddBookingAsync(It.Is<Booking>(b =>
             b.FK_TableID == dto.TableID &&
@@ -39,7 +50,7 @@ public class BookingServiceTests
             b.TimeEnd == dto.TimeEnd &&
             b.Name == dto.Name &&
             b.Email == dto.Email &&
-            b.PhoneNumber == dto.PhoneNumber))).Returns(Task.CompletedTask);
+            b.PhoneNumber == dto.Phone))).Returns(Task.CompletedTask);
 
         await _service.AddBookingAsync(dto);
 
@@ -59,7 +70,7 @@ public class BookingServiceTests
     [Fact]
     public async Task UpdateBookingAsync_NotFound_ReturnsFalse()
     {
-        var dto = new BookingUpdateDTO { BookingID = 5, TableID = 1, Name = "N", Email = "E", PhoneNumber = "P" };
+        var dto = new BookingUpdateDTO { BookingID = 5, TableID = 1, Name = "N", Email = "E", Phone = "P" };
         _bookingRepoMock.Setup(r => r.GetBookingByIDAsync(5)).ReturnsAsync((Booking?)null);
 
         var result = await _service.UpdateBookingAsync(dto);

@@ -7,7 +7,6 @@ using ResturangDB_API.Data.Repos;
 using ResturangDB_API.Data.Repos.IRepos;
 using ResturangDB_API.Services;
 using ResturangDB_API.Services.IServices;
-using System.Security.Cryptography.Xml;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddDbContext<ResturangContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddControllers();
+builder.Services.Configure<FileStorageOptions>(builder.Configuration.GetSection(FileStorageOptions.SectionName));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
@@ -78,6 +78,8 @@ builder.Services.AddScoped<IMenuItemRepo, MenuItemRepo>();
 builder.Services.AddScoped<IMenuItemService, MenuItemService>();
 builder.Services.AddScoped<IBookingRepo, BookingRepo>();
 builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddHttpClient<IImageFileStorageService, ImageFileStorageService>();
+builder.Services.AddScoped<IMenuImageBootstrapper, MenuImageBootstrapper>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAllOrigins",
@@ -101,9 +103,16 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAllOrigins");
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+using (var scope = app.Services.CreateScope())
+{
+    var bootstrapper = scope.ServiceProvider.GetRequiredService<IMenuImageBootstrapper>();
+    await bootstrapper.EnsureSeedImagesDownloadedAsync();
+}
 
 app.MapControllers();
 

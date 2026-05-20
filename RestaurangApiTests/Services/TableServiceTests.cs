@@ -58,8 +58,8 @@ public class TableServiceTests
     [Fact]
     public async Task GetAvailableTablesAsync_OverlappingBooking_MarksBookedTableUnavailable()
     {
-        var time = new DateTime(2030, 1, 1, 12, 0, 0, DateTimeKind.Utc);
-        var timeEnd = new DateTime(2030, 1, 1, 13, 0, 0, DateTimeKind.Utc);
+        var time = DateTime.UtcNow.AddDays(1);
+        var timeEnd = time.AddHours(1);
 
         var table1 = new Table { TableID = 1, TableSeats = 4, IsAvailable = true };
         var table2 = new Table { TableID = 2, TableSeats = 2, IsAvailable = true };
@@ -67,8 +67,9 @@ public class TableServiceTests
         var booking = new Booking
         {
             BookingID = 1,
-            Time = new DateTime(2030, 1, 1, 12, 30, 0, DateTimeKind.Utc),
-            TimeEnd = new DateTime(2030, 1, 1, 12, 45, 0, DateTimeKind.Utc),
+            FK_TableID = table1.TableID,
+            Time = time.AddMinutes(30),
+            TimeEnd = time.AddMinutes(45),
             Table = table1,
             Name = "Name",
             Email = "Email",
